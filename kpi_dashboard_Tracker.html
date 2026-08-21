@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KPI Weekly Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ms-blue:       #0078D4;
+  --ms-blue-dark:  #005A9E;
+  --ms-blue-hover: #106EBE;
+  --ms-blue-light: #EFF6FC;
+  --ms-blue-mid:   #C7E0F4;
+  --bg:            #F3F2F1;
+  --surface:       #FFFFFF;
+  --border:        #EDEBE9;
+  --border-dark:   #C8C6C4;
+  --text:          #201F1E;
+  --text-mid:      #605E5C;
+  --text-soft:     #A19F9D;
+  --red:           #A4262C;
+  --red-bg:        #FDE7E9;
+  --amber:         #835B00;
+  --amber-bg:      #FFF4CE;
+  --amber-mid:     #D29200;
+  --green:         #107C10;
+  --green-bg:      #DFF6DD;
+  --green-mid:     #57A300;
+  --purple:        #5C2D91;
+  --purple-bg:     #F4EAF9;
+  --purple-mid:    #8764B8;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.1);
+}
+
+body {
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── App Bar ─────────────────────────────────────────────────────────────────── */
+.app-bar {
+  background: var(--ms-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  height: 48px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  position: sticky; top: 0; z-index: 200;
+}
+.ab-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 600; letter-spacing: 0.01em;
+}
+.ab-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.3); }
+.ab-sub { font-size: 12px; font-weight: 400; opacity: 0.85; }
+.ab-right { margin-left: auto; font-size: 11px; opacity: 0.75; }
+
+/* ── Page ────────────────────────────────────────────────────────────────────── */
+.page { max-width: 1300px; margin: 0 auto; padding: 20px 20px 60px; }
+
+/* ── Card ────────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Config Panel ─────────────────────────────────────────────────────────────  */
+.config-panel {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  border-bottom: 3px solid var(--ms-blue);
+}
+.config-panel::before {
+  content: 'Configuration';
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ms-blue);
+  margin-bottom: 6px;
+}
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 160px; flex: 1; }
+.field-lbl {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.field-lbl em { color: var(--red); font-style: normal; }
+
+input[type=date] {
+  height: 32px; width: 100%;
+  border: 1px solid var(--border-dark);
+  border-radius: 2px;
+  padding: 0 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+input[type=date]:focus {
+  border-color: var(--ms-blue);
+  box-shadow: 0 0 0 1px var(--ms-blue);
+}
+input[type=date]::-webkit-calendar-picker-indicator { cursor: pointer; }
+
+.file-wrap {
+  position: relative;
+  height: 32px; width: 100%;
+  border: 1px solid var(--border-dark); border-radius: 2px;
+  background: #fff; cursor: pointer; overflow: hidden;
+  display: flex; align-items: center;
+  transition: border-color 0.15s;
+}
+.file-wrap:hover { border-color: var(--ms-blue); }
+.file-wrap.ok { border-color: var(--green-mid); background: var(--green-bg); }
+.file-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-label {
+  pointer-events: none;
+  padding: 0 10px; font-size: 12px; color: var(--text-mid);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+}
+.file-wrap.ok .file-label { color: var(--green); font-weight: 500; }
+
+.btn-run {
+  height: 32px; padding: 0 20px;
+  background: var(--ms-blue);
+  color: #fff; border: none; border-radius: 2px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s;
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.btn-run:hover:not(:disabled) { background: var(--ms-blue-hover); }
+.btn-run:disabled { background: var(--border-dark); color: var(--text-soft); cursor: not-allowed; }
+
+/* ── Info Bar ────────────────────────────────────────────────────────────────── */
+.info-bar {
+  display: none; align-items: center; flex-wrap: wrap; gap: 6px;
+  background: var(--ms-blue-light); border: 1px solid var(--ms-blue-mid);
+  border-radius: 2px; padding: 7px 14px;
+  font-size: 12px; color: var(--ms-blue-dark); margin-bottom: 14px;
+}
+.info-bar.on { display: flex; }
+.info-pill {
+  background: var(--ms-blue); color: #fff;
+  border-radius: 2px; padding: 1px 8px; font-size: 11px; font-weight: 600;
+}
+
+/* ── Error ───────────────────────────────────────────────────────────────────── */
+.err-bar {
+  display: none;
+  background: var(--red-bg); border-left: 3px solid var(--red);
+  border-radius: 2px; padding: 9px 14px; font-size: 13px;
+  color: var(--red); margin-bottom: 14px;
+}
+
+/* ── Results ─────────────────────────────────────────────────────────────────── */
+#results { display: none; }
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media(max-width:860px){ .kpi-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(max-width:500px){ .kpi-grid{ grid-template-columns:repeat(2,1fr); } }
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border-dark);
+  border-radius: 4px;
+  padding: 14px 16px 12px;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-card.kc-total   { border-top-color: var(--ms-blue); }
+.kpi-card.kc-overdue { border-top-color: var(--red); }
+.kpi-card.kc-neardue { border-top-color: var(--amber-mid); }
+.kpi-card.kc-resolved{ border-top-color: var(--green-mid); }
+.kpi-card.kc-eta     { border-top-color: var(--purple-mid); }
+
+.kpi-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-mid); margin-bottom: 6px;
+}
+.kpi-val {
+  font-size: 30px; font-weight: 700; line-height: 1;
+}
+.kc-total   .kpi-val { color: var(--ms-blue); }
+.kc-overdue .kpi-val { color: var(--red); }
+.kc-neardue .kpi-val { color: var(--amber); }
+.kc-resolved .kpi-val{ color: var(--green); }
+.kc-eta     .kpi-val { color: var(--purple); }
+.kpi-sub { font-size: 11px; color: var(--text-soft); margin-top: 3px; }
+
+/* Section */
+.tbl-card { margin-bottom: 12px; }
+.tbl-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: #FAFAFA;
+  border-bottom: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+}
+.tbl-head-title {
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+}
+.sdot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.sd-red    { background: var(--red); }
+.sd-amber  { background: var(--amber-mid); }
+.sd-green  { background: var(--green-mid); }
+.sd-purple { background: var(--purple-mid); }
+.sd-blue   { background: var(--ms-blue); }
+
+.cnt-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 1px 7px; border-radius: 10px;
+}
+.cb-red    { background: var(--red-bg);    color: var(--red); }
+.cb-amber  { background: var(--amber-bg);  color: var(--amber); }
+.cb-green  { background: var(--green-bg);  color: var(--green); }
+.cb-purple { background: var(--purple-bg); color: var(--purple); }
+.cb-blue   { background: var(--ms-blue-light); color: var(--ms-blue-dark); }
+
+.tbl-ctx { margin-left: auto; font-size: 11px; color: var(--text-soft); }
+
+.tbl-wrap { overflow-x: auto; border-radius: 0 0 4px 4px; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  background: #F8F8F7;
+  border-bottom: 1px solid var(--border-dark);
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-mid); white-space: nowrap;
+}
+thead th:first-child { width: 40px; text-align: center; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--ms-blue-light); }
+tbody td { padding: 8px 14px; font-size: 13px; vertical-align: middle; }
+tbody td:first-child { text-align: center; color: var(--text-soft); font-size: 12px; }
+
+/* Tags */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 2px;
+  font-size: 11px; font-weight: 600;
+}
+.tg-red    { background: var(--red-bg);    color: var(--red); }
+.tg-amber  { background: var(--amber-bg);  color: var(--amber); }
+.tg-green  { background: var(--green-bg);  color: var(--green); }
+.tg-purple { background: var(--purple-bg); color: var(--purple); }
+.tg-blue   { background: var(--ms-blue-light); color: var(--ms-blue-dark); }
+.tg-gray   { background: #F3F2F1; color: var(--text-mid); }
+
+.eta-old { color: var(--red); text-decoration: line-through; font-size: 12px; }
+.eta-new { color: var(--green); font-weight: 600; font-size: 12px; }
+
+.no-data td {
+  text-align: center; padding: 20px;
+  color: var(--text-soft); font-size: 12px; font-style: italic;
+}
+
+/* ── Summary Report ─────────────────────────────────────────────────────────── */
+.sum-section { margin-top: 20px; }
+.sum-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.sum-title { font-size: 14px; font-weight: 700; }
+.sum-sub { font-size: 12px; color: var(--text-soft); margin-left: auto; }
+
+.sum-wrap {
+  border: 1px solid var(--border-dark); border-radius: 4px;
+  overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.sum-table { width: 100%; border-collapse: collapse; }
+.sum-table thead th {
+  background: var(--ms-blue); color: #fff;
+  padding: 10px 16px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border: none;
+}
+.sum-table tbody tr { border-bottom: 1px solid var(--border); }
+.sum-table tbody tr:last-child { border-bottom: none; }
+.sum-table tbody tr:nth-child(even) { background: #FAFAFA; }
+.sum-table tbody tr:hover { background: var(--ms-blue-light); }
+.sum-table tbody td { padding: 10px 16px; font-size: 13px; vertical-align: middle; }
+.sum-table tbody td:first-child { font-weight: 600; color: var(--text-mid); width: 210px; }
+
+.bar-cell { display: flex; align-items: center; gap: 8px; }
+.bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 80px; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bf-blue   { background: var(--ms-blue); }
+.bf-red    { background: var(--red); }
+.bf-amber  { background: var(--amber-mid); }
+.bf-green  { background: var(--green-mid); }
+.bf-purple { background: var(--purple-mid); }
+.bar-pct { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; color: var(--text-mid); }
+
+/* ── Footer ──────────────────────────────────────────────────────────────────── */
+footer {
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  font-size: 11px; color: var(--text-soft);
+}
+footer strong { color: var(--text-mid); }
+
+
+  /* ── Search filters ──────────────────────────────────────────────────────── */
+  .tbl-search {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tbl-search input {
+    height: 26px; width: 180px;
+    border: 1px solid var(--border-dark); border-radius: 2px;
+    padding: 0 8px; font-family: 'Outfit', sans-serif;
+    font-size: 12px; color: var(--text); background: #fff; outline: none;
+  }
+  .tbl-search input:focus { border-color: var(--ms-blue); }
+  .tbl-search svg { color: var(--text-soft); flex-shrink: 0; }
+
+  @media print {
+  .app-bar { position: relative; }
+  .config-panel, .info-bar, .err-bar { display: none !important; }
+  #results { display: block !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- App Bar -->
+<div class="app-bar">
+  <div class="ab-logo">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022"/>
+      <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00"/>
+      <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF"/>
+      <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900"/>
+    </svg>
+    KPI Weekly Report
+  </div>
+  <div class="ab-sep"></div>
+  <div class="ab-sub">Service Delivery Tracker</div>
+  <div class="ab-right" id="ab-date"></div>
+</div>
+
+<div class="page">
+
+  <!-- Config -->
+  <div class="card config-panel">
+
+    <div class="field">
+      <div class="field-lbl">Last Week Date <em>*</em></div>
+      <input type="date" id="date-last"/>
+    </div>
+
+    <div class="field">
+      <div class="field-lbl">Present Week Date <em>*</em></div>
+      <input type="date" id="date-present"/>
+    </div>
+
+    <div class="field">
+      <div class="field-lbl">Last Week Excel <em>*</em></div>
+      <div class="file-wrap" id="fw-last">
+        <input type="file" id="file-last" accept=".xlsx,.xls,.csv"/>
+        <div class="file-label" id="fl-last">📁  Choose file…</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-lbl">Present Week Excel <em>*</em></div>
+      <div class="file-wrap" id="fw-present">
+        <input type="file" id="file-present" accept=".xlsx,.xls,.csv"/>
+        <div class="file-label" id="fl-present">📊  Choose file…</div>
+      </div>
+    </div>
+
+    <button class="btn-run" id="btn-run" disabled>
+      ▶ Run Analysis
+    </button>
+
+  </div>
+
+  <!-- Error -->
+  <div class="err-bar" id="err-bar"></div>
+
+  <!-- Info Bar -->
+  <div class="info-bar" id="info-bar">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--ms-blue)"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.5 3h1v4h-1V6zm0 5h1v1h-1v-1z"/></svg>
+    Comparing &nbsp;<span class="info-pill" id="ib-lw">—</span>&nbsp; →
+    <span class="info-pill" id="ib-pw">—</span>
+    &nbsp;·&nbsp; Overdue = before <strong id="ib-od">—</strong>
+    &nbsp;·&nbsp; Near Due = <strong id="ib-nd">—</strong>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kc-total">
+        <div class="kpi-lbl">Total KPIs</div>
+        <div class="kpi-val" id="s-total">0</div>
+        <div class="kpi-sub">Present week</div>
+      </div>
+      <div class="kpi-card kc-overdue">
+        <div class="kpi-lbl">Overdue</div>
+        <div class="kpi-val" id="s-overdue">0</div>
+        <div class="kpi-sub">Past due date</div>
+      </div>
+      <div class="kpi-card kc-neardue">
+        <div class="kpi-lbl">Near Due</div>
+        <div class="kpi-val" id="s-neardue">0</div>
+        <div class="kpi-sub">Due within 30 days</div>
+      </div>
+      <div class="kpi-card kc-resolved">
+        <div class="kpi-lbl">Resolved</div>
+        <div class="kpi-val" id="s-resolved">0</div>
+        <div class="kpi-sub">Cleared this week</div>
+      </div>
+      <div class="kpi-card kc-eta">
+        <div class="kpi-lbl">New ETA Set</div>
+        <div class="kpi-val" id="s-eta">0</div>
+        <div class="kpi-sub">ETA updated</div>
+      </div>
+    </div>
+
+    <!-- Overdue -->
+    <div class="tbl-card card">
+      <div class="tbl-head">
+        <div class="tbl-head-title">
+          <span class="sdot sd-red"></span> Overdue KPIs
+          <span class="cnt-badge cb-red" id="c-overdue">0</span>
+        </div>
+        <div class="tbl-search"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.856a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg><input type="text" id="search-overdue" placeholder="Search service…"/></div><div class="tbl-ctx" id="ctx-overdue"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Service Name</th><th>Due Date</th><th>ETA</th>
+            <th>Days Overdue</th><th>Priority</th>
+          </tr></thead>
+          <tbody id="t-overdue"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Near Due -->
+    <div class="tbl-card card" style="margin-top:10px;">
+      <div class="tbl-head">
+        <div class="tbl-head-title">
+          <span class="sdot sd-amber"></span> Near Due KPIs
+          <span class="cnt-badge cb-amber" id="c-neardue">0</span>
+        </div>
+        <div class="tbl-search"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.856a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg><input type="text" id="search-neardue" placeholder="Search service…"/></div><div class="tbl-ctx" id="ctx-neardue"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Service Name</th><th>Due Date</th><th>ETA</th>
+            <th>Days Remaining</th><th>Urgency</th>
+          </tr></thead>
+          <tbody id="t-neardue"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Resolved -->
+    <div class="tbl-card card" style="margin-top:10px;">
+      <div class="tbl-head">
+        <div class="tbl-head-title">
+          <span class="sdot sd-green"></span> Resolved KPIs
+          <span class="cnt-badge cb-green" id="c-resolved">0</span>
+        </div>
+        <div class="tbl-search"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.856a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg><input type="text" id="search-resolved" placeholder="Search service…"/></div><div class="tbl-ctx">In last week · Not in present week</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Service Name</th><th>Last Week Due Date</th>
+            <th>Last Week ETA</th><th>Status</th>
+          </tr></thead>
+          <tbody id="t-resolved"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ETA Changed -->
+    <div class="tbl-card card" style="margin-top:10px;">
+      <div class="tbl-head">
+        <div class="tbl-head-title">
+          <span class="sdot sd-purple"></span> New ETA Set
+          <span class="cnt-badge cb-purple" id="c-eta">0</span>
+        </div>
+        <div class="tbl-search"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.856a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg><input type="text" id="search-eta" placeholder="Search service…"/></div><div class="tbl-ctx">ETA changed between last week and present week</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Service Name</th><th>Due Date</th>
+            <th>Old ETA (Last Week)</th><th>New ETA (Present)</th><th>Change</th>
+          </tr></thead>
+          <tbody id="t-eta"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Executive Summary ───────────────────────────────────────────────── -->
+    <div class="sum-section">
+      <div class="sum-head">
+        <span class="sdot sd-blue" style="width:10px;height:10px;"></span>
+        <span class="sum-title">Executive Summary</span>
+        <span class="sum-sub" id="sum-range"></span>
+      </div>
+      <div class="sum-wrap">
+        <table class="sum-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Count</th>
+              <th style="min-width:200px;">Share of Total</th>
+              <th>%</th>
+              <th>Health</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="t-summary"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+
+  <footer>
+    <strong>KPI Weekly Report</strong> · Service Delivery Tracker
+    <span id="ft-info"></span>
+    <span style="margin-left:auto;">Generated: <span id="ft-ts"></span></span>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DATE ENGINE  —  Fully timezone-safe YYYYMMDD integer approach
+   ─────────────────────────────────────────────────────────────────────────
+   All dates are stored as plain integers: YYYYMMDD
+   e.g.  17 Apr 2025  →  20250417
+
+   Benefits:
+     • Zero timezone / UTC vs Local ambiguity
+     • Comparisons are pure integer math  (< > ===)
+     • Works identically in IST, UTC, or any timezone
+     • No floating-point drift
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Convert any value coming from XLSX/CSV into a YYYYMMDD integer, or null.
+ * Handles: Excel numeric serials, ISO strings, DD/MM/YYYY, JS Date objects.
+ */
+function toYMD(v) {
+  if (v == null || v === '') return null;
+
+  /* ── JS Date object ────────────────────────────────────────────────────── */
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    return v.getFullYear() * 10000 + (v.getMonth() + 1) * 100 + v.getDate();
+  }
+
+  /* ── Excel numeric serial ──────────────────────────────────────────────── */
+  if (typeof v === 'number') {
+    if (v < 1) return null;
+    const serial = Math.floor(v);               // strip any time fraction
+    const ms  = (serial - 25569) * 86400000;   // UTC milliseconds from Unix epoch
+    const tmp = new Date(ms);                   // parse as UTC
+    const y = tmp.getUTCFullYear();
+    const m = tmp.getUTCMonth() + 1;
+    const d = tmp.getUTCDate();
+    if (y < 1900 || y > 2200) return null;
+    return y * 10000 + m * 100 + d;
+  }
+
+  /* ── String date ───────────────────────────────────────────────────────── */
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (!s) return null;
+
+    let y, m, d;
+
+    // ISO: YYYY-MM-DD  (also handles ISO datetime "YYYY-MM-DDThh:mm:ssZ")
+    let mt = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (mt) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+
+    // Slash / dash / dot numeric dates → interpret as US M/D/YYYY.
+    // Confirmed from the S360 exports: "5/18/2026" === ISO "2026-05-18" for the
+    // same alert across snapshots, so the month comes first. If the first field
+    // is > 12 it cannot be a month, so fall back to D/M/YYYY for safety.
+    if (!y) {
+      mt = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+      if (mt) {
+        const a = +mt[1], b = +mt[2];
+        if (a > 12 && b <= 12) { d = a; m = b; }   // D/M fallback
+        else                   { m = a; d = b; }   // M/D (US) default
+        y = +mt[3];
+      }
+    }
+
+    // DD-Mon-YYYY  or  DD Mon YYYY  e.g. "17-Apr-2025"
+    if (!y) {
+      mt = s.match(/^(\d{1,2})[\s\-]([A-Za-z]{3,9})[\s\-](\d{4})$/);
+      if (mt) {
+        const MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+        const mk = mt[2].toLowerCase().slice(0,3);
+        if (MON[mk]) { d = +mt[1]; m = MON[mk]; y = +mt[3]; }
+      }
+    }
+
+    if (y && m && d) {
+      if (y < 1900 || y > 2200 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+      return y * 10000 + m * 100 + d;
+    }
+    return null;
+  }
+  return null;
+}
+
+/** Parse HTML date-input string "YYYY-MM-DD" → YYYYMMDD integer */
+function inputToYMD(v) {
+  if (!v) return null;
+  const p = v.split('-').map(Number);
+  if (p.length !== 3 || p.some(isNaN)) return null;
+  return p[0] * 10000 + p[1] * 100 + p[2];
+}
+
+/** Days in a given 1-based month (leap-year aware). */
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+/** Add exactly one calendar month, clamping to the last valid day of the target
+ *  month.  addOneMonth(20250417) → 20250517 ;  addOneMonth(20250131) → 20250228 */
+function addOneMonth(ymd) {
+  let y = Math.floor(ymd / 10000);
+  let m = Math.floor((ymd % 10000) / 100) + 1;
+  let d = ymd % 100;
+  if (m > 12) { m = 1; y += 1; }
+  const dim = daysInMonth(y, m);
+  if (d > dim) d = dim;
+  return y * 10000 + m * 100 + d;
+}
+
+/** Format YYYYMMDD integer → "17 Apr 2025" */
+function fmt(ymd) {
+  if (!ymd) return '—';
+  const y = Math.floor(ymd / 10000);
+  const m = Math.floor((ymd % 10000) / 100) - 1;
+  const d = ymd % 100;
+  return new Date(y, m, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/** Whole-day difference: daysDiff(a, b) = b − a in days */
+function daysDiff(aYMD, bYMD) {
+  const toMs = ymd => {
+    const y = Math.floor(ymd / 10000), m = Math.floor((ymd % 10000) / 100) - 1, d = ymd % 100;
+    return new Date(y, m, d, 0, 0, 0, 0).getTime();
+  };
+  return Math.round((toMs(bYMD) - toMs(aYMD)) / 86400000);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FILE READER  —  Works for both .xlsx and .csv
+   ════════════════════════════════════════════════════════════════════════════ */
+function readXL(file) {
+  return new Promise((ok, fail) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        // 'array' + ArrayBuffer lets SheetJS auto-detect UTF-8 correctly, so
+        // non-ASCII characters survive intact across .csv and .xlsx uploads.
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        ok(XLSX.utils.sheet_to_json(ws, { raw: true, defval: '', blankrows: false }));
+      } catch (ex) { fail(ex); }
+    };
+    reader.onerror = () => fail(new Error('File could not be read.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   COLUMN DETECTION  —  Exact match first, then "contains" fallback.
+   An exclusion list keeps value columns from binding to descriptive ones, so
+   "ETA" never matches "ETA Status" and "Due Date" never matches "Security Due Date".
+   ════════════════════════════════════════════════════════════════════════════ */
+function nk(k) { return String(k).toLowerCase().replace(/[\s_\-]+/g, ''); }
+
+function getv(row, candidates, exclude = []) {
+  const keys = Object.keys(row);
+  const ex = exclude.map(nk);
+  const bad = k => ex.some(x => nk(k).includes(x));
+  // Pass 1 — exact normalised match
+  for (const c of candidates) {
+    const f = keys.find(k => nk(k) === nk(c) && !bad(k));
+    if (f !== undefined) return row[f];
+  }
+  // Pass 2 — contains fallback (only reached if no exact match found)
+  for (const c of candidates) {
+    const f = keys.find(k => nk(k).includes(nk(c)) && !bad(k));
+    if (f !== undefined) return row[f];
+  }
+  return null;
+}
+
+/** Strip HTML tags/entities from a cell and collapse whitespace → visible text. */
+function stripHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Trim and collapse internal whitespace (whitespace-safe key normalisation). */
+function normTxt(s) { return String(s || '').trim().replace(/\s+/g, ' '); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ROW PARSER
+   Produces: { service, dueYMD, etaYMD, dueValid, identity }
+   - Keeps only rows with a non-empty Service Name (these count toward Total).
+   - Rows whose Due Date cannot be parsed keep dueYMD = null: they still count
+     toward Total but are excluded from Overdue / Near Due and from matching.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+// Column-name tokens that must never be mistaken for a value column.
+const VALUE_EXCLUDE = ['status', 'comment', 'remarks', 'notes', 'reason', 'owner', 'assigned', 'security'];
+
+/** Pull a stable ADO work-item id from the row, if one is present. */
+function extractWorkItemId(row) {
+  const wi = String(getv(row, ['Work Item', 'WorkItemId', 'Work Item Id'], []) ?? '');
+  // Prefer the ADO work-item URL, then the visible anchor text.
+  let m = wi.match(/_workitems\/edit\/(\d+)/i);
+  if (m) return m[1];
+  m = stripHtml(wi).match(/(\d{4,})/);
+  if (m) return m[1];
+  // Fall back to a work-item URL embedded in the S360 ADO Link column.
+  m = String(getv(row, ['S360 ADO Link', 'ADO Link'], []) ?? '').match(/_workitems\/edit\/(\d+)/i);
+  return m ? m[1] : null;
+}
+
+function parseRows(rows) {
+  return rows
+    .map(r => {
+      const service = normTxt(getv(r, ['Service Name', 'ServiceName', 'Service'], VALUE_EXCLUDE));
+      const title   = stripHtml(getv(r, ['Title', 'Action'], VALUE_EXCLUDE));
+      const fileLoc = normTxt(getv(r, ['File Location', 'FileLocation'], VALUE_EXCLUDE));
+      const comp    = normTxt(getv(r, ['Component'], VALUE_EXCLUDE));
+      const wid     = extractWorkItemId(r);
+
+      const dueYMD = toYMD(getv(r, ['Due Date', 'DueDate', 'due_date', 'Due'], VALUE_EXCLUDE));
+      const etaYMD = toYMD(getv(r, ['ETA', 'ETA Date', 'eta_date'], VALUE_EXCLUDE));
+
+      // Stable identity that describes the work item, NOT its mutable Due/ETA/owner.
+      // Due Date is deliberately excluded so a deadline change is never mistaken
+      // for a Resolved item, and an ETA change on a shifted item is still caught.
+      const parts = [
+        wid ? 'wi:' + wid : '',
+        service.toLowerCase(),
+        title.toLowerCase(),
+        fileLoc.toLowerCase(),
+        comp.toLowerCase(),
+      ].filter(Boolean);
+      // If only the service name is available, fall back to service + due date so
+      // unrelated rows are not over-collapsed into a single identity.
+      const identity = parts.length > 1
+        ? parts.join('\u00a6')
+        : service.toLowerCase() + '\u00a6' + (dueYMD ?? 'null');
+
+      return { service, dueYMD, etaYMD, dueValid: dueYMD != null, identity };
+    })
+    .filter(r => r.service.length > 0);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HTML HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function fill(id, html) {
+  document.getElementById(id).innerHTML =
+    html || `<tr class="no-data"><td colspan="10">No records found</td></tr>`;
+}
+
+function pct(n, t) { return t > 0 ? Math.round(n / t * 100) : 0; }
+
+function barHtml(cls, n, total) {
+  const p = pct(n, Math.max(total, 1));
+  return `<div class="bar-cell">
+    <div class="bar-track"><div class="bar-fill ${cls}" style="width:${p}%"></div></div>
+    <div class="bar-pct">${p}%</div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SEARCH FILTER  (optional enhancement)
+   ════════════════════════════════════════════════════════════════════════════ */
+function attachSearchFilter(inputId, tbodyId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase();
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   UI WIRING
+   ════════════════════════════════════════════════════════════════════════════ */
+let fPresent = null, fLast = null;
+
+function checkReady() {
+  const ok = fPresent && fLast
+    && document.getElementById('date-last').value
+    && document.getElementById('date-present').value;
+  document.getElementById('btn-run').disabled = !ok;
+  updateInfoBar();
+}
+
+function updateInfoBar() {
+  const dL = inputToYMD(document.getElementById('date-last').value);
+  const dP = inputToYMD(document.getElementById('date-present').value);
+  const bar = document.getElementById('info-bar');
+  if (dL && dP) {
+    const nd = addOneMonth(dP);
+    document.getElementById('ib-lw').textContent = fmt(dL);
+    document.getElementById('ib-pw').textContent = fmt(dP);
+    document.getElementById('ib-od').textContent = fmt(dP);
+    document.getElementById('ib-nd').textContent = `${fmt(dP)} – ${fmt(nd)}`;
+    bar.classList.add('on');
+  } else {
+    bar.classList.remove('on');
+  }
+}
+
+['date-last', 'date-present'].forEach(id =>
+  document.getElementById(id).addEventListener('change', checkReady));
+
+function setupFile(inpId, wrapId, lblId, setter) {
+  document.getElementById(inpId).addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    setter(f);
+    document.getElementById(lblId).textContent = '✓  ' + f.name;
+    document.getElementById(wrapId).classList.add('ok');
+    checkReady();
+  });
+}
+setupFile('file-last',    'fw-last',    'fl-last',    f => fLast    = f);
+setupFile('file-present', 'fw-present', 'fl-present', f => fPresent = f);
+
+document.getElementById('ab-date').textContent =
+  new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAIN ANALYSIS ENGINE
+   ════════════════════════════════════════════════════════════════════════════ */
+document.getElementById('btn-run').addEventListener('click', async () => {
+  const errEl = document.getElementById('err-bar');
+  errEl.style.display = 'none';
+
+  try {
+    /* ── Step 1 · Read reference dates ─────────────────────────────────────── */
+    const dP = inputToYMD(document.getElementById('date-present').value);
+    const dL = inputToYMD(document.getElementById('date-last').value);
+
+    if (!dP) throw new Error('Please select a valid Present Week Date.');
+    if (!dL) throw new Error('Please select a valid Last Week Date.');
+    if (dL >= dP) throw new Error('Last Week Date must be before the Present Week Date.');
+
+    // Near-Due upper bound: present date + exactly 1 calendar month
+    // e.g. 17 Apr → 17 May  (both ends inclusive)
+    const nd1M = addOneMonth(dP);
+
+    /* ── Step 2 · Load & parse both files ──────────────────────────────────── */
+    const [rawP, rawL] = await Promise.all([readXL(fPresent), readXL(fLast)]);
+    const present = parseRows(rawP);
+    const last    = parseRows(rawL);
+
+    if (!present.length)
+      throw new Error('Present week file has no valid rows. Ensure columns are named "Service Name", "Due Date", and "ETA".');
+
+    /* ── Step 3 · Total KPIs ───────────────────────────────────────────────── */
+    const total = present.length;
+
+    /* ── Step 4 · Overdue ──────────────────────────────────────────────────────
+       Rule: Due Date STRICTLY BEFORE present date.
+       Example: present = Apr 17 → overdue = Due Date ≤ Apr 16.
+                Apr 17 itself is NOT overdue — it falls in Near Due.
+       Logic:   dueYMD < dP   (pure integer comparison, zero timezone risk)
+    ─────────────────────────────────────────────────────────────────────────── */
+    const overdue = present.filter(r => r.dueValid && r.dueYMD < dP);
+
+    /* ── Step 5 · Near Due ─────────────────────────────────────────────────────
+       Rule: Due Date >= present date  AND  Due Date <= present + 1 month.
+       Example: present = Apr 17 → Apr 17 to May 17 inclusive.
+       Logic:   dP <= dueYMD <= nd1M
+    ─────────────────────────────────────────────────────────────────────────── */
+    const nearDue = present.filter(r => r.dueValid && r.dueYMD >= dP && r.dueYMD <= nd1M);
+
+    /* ── Step 6 + 7 · Resolved & ETA changes (identity-based) ───────────────────
+       A KPI is identified by a stable fingerprint (see parseRows → identity):
+       Work Item id + Service + Title/Action + File Location + Component.
+       Due Date and ETA are intentionally NOT part of the identity, so:
+         • a deadline change is never mistaken for a Resolved item, and
+         • an ETA change is still detected even if the due date also moved.
+
+       Present rows are queued per identity; each last-week row consumes one
+       matching present slot (handles duplicates without double-counting):
+         • last row with no remaining present slot → RESOLVED.
+         • matched pair with a different ETA        → ETA change.
+
+       ETA transitions:
+         none → date   "ETA Set"      date → none   "ETA Removed"
+         later date    "Delayed ↑"    earlier date  "Improved ↓"
+    ─────────────────────────────────────────────────────────────────────────── */
+    const presentByKey = new Map();
+    for (const r of present) {
+      let q = presentByKey.get(r.identity);
+      if (!q) { q = []; presentByKey.set(r.identity, q); }
+      q.push(r);
+    }
+
+    const resolved = [];
+    const etaChg   = [];
+
+    for (const lr of last) {
+      const q = presentByKey.get(lr.identity);
+      if (q && q.length) {
+        const pr = q.shift();                    // same KPI is present this week
+        const oldETA = lr.etaYMD || 0;
+        const newETA = pr.etaYMD || 0;
+        if (oldETA !== newETA) {
+          let label, cls;
+          if (!lr.etaYMD && pr.etaYMD)      { label = 'ETA Set';     cls = 'tg-blue'; }
+          else if (lr.etaYMD && !pr.etaYMD) { label = 'ETA Removed'; cls = 'tg-amber'; }
+          else if (newETA > oldETA)         { label = 'Delayed ↑';   cls = 'tg-red'; }
+          else                              { label = 'Improved ↓';  cls = 'tg-green'; }
+          etaChg.push({
+            service: pr.service,
+            dueYMD:  pr.dueYMD,
+            oldETA:  lr.etaYMD,
+            newETA:  pr.etaYMD,
+            label,
+            cls,
+          });
+        }
+      } else {
+        resolved.push(lr);                       // absent this week → resolved
+      }
+    }
+
+    /* ── Step 8 · Update KPI cards ─────────────────────────────────────────── */
+    document.getElementById('s-total').textContent    = total;
+    document.getElementById('s-overdue').textContent  = overdue.length;
+    document.getElementById('s-neardue').textContent  = nearDue.length;
+    document.getElementById('s-resolved').textContent = resolved.length;
+    document.getElementById('s-eta').textContent      = etaChg.length;
+
+    document.getElementById('c-overdue').textContent  = overdue.length;
+    document.getElementById('c-neardue').textContent  = nearDue.length;
+    document.getElementById('c-resolved').textContent = resolved.length;
+    document.getElementById('c-eta').textContent      = etaChg.length;
+
+    document.getElementById('ctx-overdue').textContent =
+      `Due Date before ${fmt(dP)}  (${fmt(dP)} is NOT overdue)`;
+    document.getElementById('ctx-neardue').textContent =
+      `${fmt(dP)} → ${fmt(nd1M)}  (both inclusive)`;
+
+    /* ── Step 9 · Overdue table ────────────────────────────────────────────── */
+    fill('t-overdue', overdue.map((r, i) => {
+      const d = daysDiff(r.dueYMD, dP);
+      const [sev, sc] = d > 30 ? ['Critical','tg-red'] : d > 14 ? ['High','tg-red'] : ['Medium','tg-amber'];
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${esc(r.service)}</td>
+        <td><span class="tag tg-red">${fmt(r.dueYMD)}</span></td>
+        <td>${fmt(r.etaYMD)}</td>
+        <td><span class="tag tg-red">${d} day${d !== 1 ? 's' : ''}</span></td>
+        <td><span class="tag ${sc}">${sev}</span></td>
+      </tr>`;
+    }).join(''));
+
+    /* ── Step 10 · Near Due table ──────────────────────────────────────────── */
+    fill('t-neardue', nearDue.map((r, i) => {
+      const d = daysDiff(dP, r.dueYMD);
+      const [urg, uc] = d === 0
+        ? ['Due Today','tg-red']
+        : d <= 7  ? ['High',  'tg-red']
+        : d <= 14 ? ['Medium','tg-amber']
+        : ['Low','tg-blue'];
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${esc(r.service)}</td>
+        <td><span class="tag tg-amber">${fmt(r.dueYMD)}</span></td>
+        <td>${fmt(r.etaYMD)}</td>
+        <td><span class="tag tg-amber">${d === 0 ? 'Today' : d + ' day' + (d !== 1 ? 's' : '')}</span></td>
+        <td><span class="tag ${uc}">${urg}</span></td>
+      </tr>`;
+    }).join(''));
+
+    /* ── Step 11 · Resolved table ──────────────────────────────────────────── */
+    fill('t-resolved', resolved.map((r, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${esc(r.service)}</td>
+      <td>${fmt(r.dueYMD)}</td>
+      <td>${fmt(r.etaYMD)}</td>
+      <td><span class="tag tg-green">✓ Resolved</span></td>
+    </tr>`).join(''));
+
+    /* ── Step 12 · ETA Changed table ───────────────────────────────────────── */
+    fill('t-eta', etaChg.map((r, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${esc(r.service)}</td>
+      <td>${fmt(r.dueYMD)}</td>
+      <td><span class="eta-old">${fmt(r.oldETA)}</span></td>
+      <td><span class="eta-new">${fmt(r.newETA)}</span></td>
+      <td><span class="tag ${r.cls}">${r.label}</span></td>
+    </tr>`).join(''));
+
+    /* ── Step 13 · Executive Summary table ─────────────────────────────────── */
+    document.getElementById('sum-range').textContent = `Period: ${fmt(dL)} → ${fmt(dP)}`;
+
+    const sumRows = [
+      { label: 'Total KPIs (Present Week)', n: total,           bc: 'bf-blue',   chip: 'cb-blue',   ht: 'tg-blue',   htxt: 'Active',          rem: `${last.length} rows last week · ${total} rows this week` },
+      { label: 'Overdue KPIs',              n: overdue.length,  bc: 'bf-red',    chip: 'cb-red',    ht: 'tg-red',    htxt: 'Action Required', rem: `Due Date strictly before ${fmt(dP)}` },
+      { label: 'Near Due KPIs',             n: nearDue.length,  bc: 'bf-amber',  chip: 'cb-amber',  ht: 'tg-amber',  htxt: 'Monitor',         rem: `Due between ${fmt(dP)} and ${fmt(nd1M)} (inclusive)` },
+      { label: 'Resolved KPIs',             n: resolved.length, bc: 'bf-green',  chip: 'cb-green',  ht: 'tg-green',  htxt: 'Closed',          rem: 'In last week but absent from present week (matched by work-item identity)' },
+      { label: 'New ETA Set / Changed',     n: etaChg.length,   bc: 'bf-purple', chip: 'cb-purple', ht: 'tg-purple', htxt: 'Updated',         rem: 'ETA changed on the same work item (identity-matched, due-date independent)' },
+    ];
+
+    document.getElementById('t-summary').innerHTML = sumRows.map(s => `
+      <tr>
+        <td>${s.label}</td>
+        <td><span class="tag ${s.chip}" style="font-size:13px;padding:3px 11px;">${s.n}</span></td>
+        <td>${barHtml(s.bc, s.n, Math.max(total, 1))}</td>
+        <td style="font-weight:600;">${pct(s.n, Math.max(total, 1))}%</td>
+        <td><span class="tag ${s.ht}">${s.htxt}</span></td>
+        <td style="font-size:12px;color:var(--text-mid);">${s.rem}</td>
+      </tr>`).join('');
+
+    /* ── Step 14 · Footer ───────────────────────────────────────────────────── */
+    document.getElementById('ft-info').textContent =
+      `· Present: ${fmt(dP)} · Last Week: ${fmt(dL)}`;
+    document.getElementById('ft-ts').textContent =
+      new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    /* ── Step 15 · Attach search filters ────────────────────────────────────── */
+    attachSearchFilter('search-overdue',  't-overdue');
+    attachSearchFilter('search-neardue',  't-neardue');
+    attachSearchFilter('search-resolved', 't-resolved');
+    attachSearchFilter('search-eta',      't-eta');
+
+  } catch (ex) {
+    errEl.textContent = '⚠  ' + ex.message;
+    errEl.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
